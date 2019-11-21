@@ -12,7 +12,7 @@
             </el-form-item>
 
             <el-form-item label="选择图片" prop="file">
-                <el-upload action="/api/resource/getPhoto" :on-success="handleSuccess"
+                <el-upload action="/api1/resource/getPhoto" :on-success="handleSuccess"
                            :on-error="handleError" :file-list="fileList" list-type="card"
                            :limit="1" accept=".png,.jpeg,.jpg">
                     <el-button size="small" type="primary">点击上传</el-button>
@@ -105,7 +105,7 @@
                         console.log(that.form.book)
                         if(that.form.filename !== ""){
                             that.loading = true;
-                            that.axios.post('/api/resource/testPhoto', {
+                            that.axios.post('/api1/resource/testPhoto', {
                                 filename:that.form.filename,
                                 book:that.form.book
                             }).then((response) => {

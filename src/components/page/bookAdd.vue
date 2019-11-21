@@ -25,11 +25,11 @@
                     <el-form-item label="页数" prop="pages">
                         <el-input v-model.number="form.pages"></el-input>
                     </el-form-item>
-                    <el-form-item label="出版社">
+                    <el-form-item label="出版社" prop="publishing">
                         <el-input v-model="form.publishing"></el-input>
                     </el-form-item>
                     <el-form-item label="书籍简介">
-                        <el-input type="textarea" v-model="form.description"></el-input>
+                        <el-input type="textarea" v-model="form.describe"></el-input>
                     </el-form-item>
                     <el-form-item>
                         <el-button type="primary" @click="submit('form')">提交</el-button>
@@ -50,7 +50,7 @@
             return {
                 form: {
                     name: '',
-                    description: '',
+                    describe: '',
                     isbn: '',
                     author: '',
                     publishing: '',
@@ -69,17 +69,39 @@
                     pages: [
                         { required: true, message: '请输入页数', trigger: 'blur' },
                         { type: 'number', message: '页数需为数字值' }
+                    ],
+                    publishing: [
+                        { required: true, message: '请输入出版社', trigger: 'blur' }
                     ]
                 }
             };
         },
         methods: {
             submit(formName) {
+                let that = this;
                 this.$refs[formName].validate((valid) => {
                     if (valid) {
-                        alert('submit!');
+                        that.axios.post('/book/book', that.form)
+                            .then(function(response) {
+                                if (response.data['code'] == -1) {
+                                    that.$message.error('书籍isbn不能重复');
+                                } else {
+                                    that.$message.success('添加成功');
+                                    that.form = {
+                                        name: '',
+                                        describe: '',
+                                        isbn: '',
+                                        author: '',
+                                        publishing: '',
+                                        pages: ''
+                                    };
+                                }
+                            })
+                            .catch(function(response) {
+                                that.$message.error('出错了，请稍后重试');
+                            });
                     } else {
-                        console.log('error submit!!');
+                        that.$message.error('提交失败，请稍后重试');
                         return false;
                     }
                 });

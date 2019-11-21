@@ -30,13 +30,13 @@ export default new Router({
                     meta: { title: '书籍管理' }
                 },
                 {
-                  path:'/resourceManage',
-                  component:() => import('../components/page/resourceManage.vue'),
-                  meta: {title:'资源管理'}
-                },{
-                    path:'/test',
+                    path: '/resourceManage',
+                    component: () => import('../components/page/resourceManage.vue'),
+                    meta: { title: '资源管理' }
+                }, {
+                    path: '/test',
                     component: () => import('../components/page/Test.vue'),
-                    meta: {title:'测试页面'}
+                    meta: { title: '测试页面' }
                 },
                 {
                     path: '/dashboard',
@@ -130,11 +130,13 @@ export default new Router({
         },
         {
             path: '/login',
-            component: () => import(/* webpackChunkName: "login" */ '../components/page/Login.vue')
+            component: () => import(/* webpackChunkName: "login" */ '../components/page/Login.vue'),
+            meta: { title: '登录界面' }
         },
         {
             path: '*',
-            redirect: '/404'
+            redirect: '/404',
+            meta: { title: '错误界面' }
         }
     ]
 });

@@ -1,7 +1,7 @@
 <template>
     <div>
         <el-row :gutter="20">
-            <el-col :span="11" offset=1>
+            <el-col :span="11" :offset=1>
                 <el-card shadow="hover" style="height: 254px; margin-bottom: 20px">
                     <div class="user-info">
                         <img src="../../assets/img/img.jpg" class="user-avator" alt="" >
@@ -26,7 +26,7 @@
         </el-row>
 
         <el-row :gutter="20">
-            <el-col :span="22" offset=1>
+            <el-col :span="22" :offset=1>
                 <el-card shadow="hover">
                     <div slot="header"><span>书本信息</span></div>
                     <div>
@@ -67,8 +67,6 @@
                         img:'../../assets/img/img.jpg',
                         name:'book4'
                     },
-
-
                 ]
 
             }

@@ -12,14 +12,13 @@
         </div>
 
         <div class="container">
-
-
-            <el-table :data="tableData" border>
-
+            <el-table :data="tableData" border stripe style="text-align: center">
                 <el-table-column prop="name" width="180" label="书籍名"></el-table-column>
                 <el-table-column prop="author" label="作者"></el-table-column>
                 <el-table-column prop="isbn" label="isbn"></el-table-column>
                 <el-table-column prop="publishing" label="出版社"></el-table-column>
+                <el-table-column prop="pages" label="页数"></el-table-column>
+                <el-table-column prop="describe" label="简介"></el-table-column>
                 <el-table-column label="操作">
                     <template slot-scope="scope">
                         <el-button
@@ -34,46 +33,60 @@
                                 @click="handleUpload(scope.$index, scope.row)"
                         >上传音频
                         </el-button>
-                        <el-button
-                                type="text"
-                                icon="el-icon-delete"
-                                class="red"
-                                @click="handleDelete(scope.$index, scope.row)"
-                        >删除
-                        </el-button>
+                        <!--                        书籍删除功能在书籍列表-->
+                        <!--                        <el-button-->
+                        <!--                                type="text"-->
+                        <!--                                icon="el-icon-delete"-->
+                        <!--                                class="red"-->
+                        <!--                                @click="handleDelete(scope.$index, scope.row)"-->
+                        <!--                        >删除-->
+                        <!--                        </el-button>-->
                     </template>
                 </el-table-column>
-
             </el-table>
         </div>
 
-        <el-dialog :fullscreen=true title="区域划分" :visible.sync="editVisible" style=" min-width:900px;height: 100%">
+        <el-dialog id="divDialog" :fullscreen=true title="区域划分" :visible.sync="editVisible"
+                   :before-close="areaDivClose">
             <div id="main" style="">
-                <div class="images" v-bind:style="{width: sidebarWidthLeft+'px'}" style="float: left;display: inline">
-                    <div v-bind:style="{width: sidebarWidthLeft+'px'}" style="height: 100%; margin-top: 0">
-                        <el-image v-for="(url,index) in urls" :src="url" @click="clickImage(index)"></el-image>
+                <div id="leftSidebar" v-bind:style="{width: sidebarWidthLeft+'px'}">
+                    <div id="images" v-bind:style="{width: sidebarWidthLeft+'px'}" style="height: 100%; margin-top: 0">
+                        <div class="sideImageContainer" v-for="(img,index) in imgList">
+                            <el-image :style="index==currentPage?'border:3px solid #96c2f1;':'border: 1px solid black;'"
+                                      style="margin-right: 20px" :src="img.src" @click="clickImage(index)"></el-image>
+                            <span style="margin-right:30px">{{index+1}}</span>
+                        </div>
                     </div>
-
                 </div>
-                <!--                style="background-image:url(https://fuss10.elemecdn.com/e/5d/4a731a90594a4af544c0c25941171jpeg.jpeg);background-size:100%,100%;margin-left: 6px;min-width: 947px;height:auto;display:inline;width:1500px;">-->
 
-                <div id="canvasDiv" v-bind:style="{backgroundImage:'url('+this.currentUrl+')', left:(sidebarWidthLeft+25)+'px'}"
-                     :width="canvasWidth"
-                     style="background-image:url(https://fuss10.elemecdn.com/e/5d/4a731a90594a4af544c0c25941171jpeg.jpeg);background-size:100%,100%;float:left;margin-left: 6px;position: fixed;">
-                    <canvas id='mainCanvas' :width=canvasWidth :height=canvasHeight v-bind:style="{cursor:this.cursor}"
+                <div id="canvasDiv"
+                     v-bind:style="{backgroundImage:'url('+this.currentUrl+')', left:(sidebarWidthLeft+25)+'px'}"
+                     :width="canvasWidth">
+                    <canvas id='mainCanvas' :width=canvasWidth :height=canvasHeight :style="{cursor:this.cursor}"
                             @mousedown="canvasDown" @mouseup="canvasUp"
                             @mousemove="canvasMove"></canvas>
                 </div>
-                <div id="" v-bind:style="{width:sidebarWidthRight+'px',left:(sidebarWidthLeft+canvasWidth+35)+'px'}" style="float:left;height:100%;position:fixed;overflow :auto;">
-                    <div v-for="(info,index) in drawInfo"
-                         style="margin-bottom: 5px;padding-top:2px;padding-bottom: 2px"
-                         :style="index==selectedItem ? 'backgroundColor:#FF722C;': 'backgroundColor:#A0FFE2;'">
-                        <div v-bind:style="{width:sidebarWidthRight*0.1+'px',height:sidebarWidthRight*0.1+'px'}" style="cursor: pointer;display: inline-block;border:1px solid;border-radius:50%;text-align: center;vertical-align: middle;"
-                             @click="selectItem(index)">{{index+1}}
+                <div id="rightSidebar"
+                     v-bind:style="{width:sidebarWidthRight+'px',left:(sidebarWidthLeft+canvasWidth+35)+'px'}">
+                    <span>分区列表</span>
+                    <div id="areasContainer">
+                        <div class="areaList" v-for="(info,index) in drawInfo"
+                             :style="index==selectedItem ? 'backgroundColor:#FF722C;': 'backgroundColor:#A0FFE2;'">
+                            <div class="areaIndex"
+                                 :style="{width:sidebarWidthRight*0.1+'px',height:sidebarWidthRight*0.1+'px'}"
+                                 @click="selectItem(index)">{{index+1}}
+                            </div>
+                            <el-input class="areaName" :style="{width:sidebarWidthRight*0.6+'px'}"
+                                      v-model="info.name"
+                                      @input="updateInput"></el-input>
+                            <el-button type="danger" icon="el-icon-delete" circle
+                                       @click="deleteInfo(index)"></el-button>
                         </div>
-                        <el-input v-bind:style="{width:sidebarWidthRight*0.6+'px'}" v-model="info.name" style="width:100px;padding-left:2px;padding-right:2px"
-                                  @input="updateInput"></el-input>
-                        <el-button type="danger" icon="el-icon-delete" circle @click="deleteInfo(index)"></el-button>
+                    </div>
+
+                    <div style="text-align: center">
+                        <el-button type="primary" plain @click="scaleDrawInfo" title="改变屏幕大小后，点击重新绘制">重新绘制</el-button>
+                        <el-button type="primary" plain @click="submitMarks()">保存分区</el-button>
                     </div>
                 </div>
             </div>
@@ -107,7 +120,19 @@
             },
             lineColor: {
                 type: String,
-                default: '#000'
+                default: '#fc2052'
+            },
+            selectedLineColor: {
+                type: String,
+                default: '#ff2078'
+            },
+            fillColor: {
+                type: String,
+                default: 'rgba(255,224,157,0.3)'
+            },
+            selectFillColor: {
+                type: String,
+                default: 'rgba(255,18,54,0.3)'
             },
             lineWidth: {
                 type: Number,
@@ -116,7 +141,7 @@
             lineType: {
                 type: String,
                 default: 'rec'
-            },
+            }
 
         }
         ,
@@ -125,29 +150,42 @@
                 tableData: [{
                     name: 'test',
                     author: 'test'
-
                 }
                 ],
                 idx: '',
                 editVisible: false,
                 uploadVisible: false,
-                form: {},
                 fileList: [],
                 urls: [
-                    'https://cdn.img.wenhairu.com/images/2019/11/05/ADZjP.jpg',
-                    "https://cdn.img.wenhairu.com/images/2019/11/05/ADPZh.jpg",
-                    "https://cdn.img.wenhairu.com/images/2019/11/05/ADI7t.jpg",
-                    "https://cdn.img.wenhairu.com/images/2019/11/05/ADVYC.jpg",
-                    "https://cdn.img.wenhairu.com/images/2019/11/05/ADOsS.jpg",
-                    "https://cdn.img.wenhairu.com/images/2019/11/05/ADXys.jpg",
-                    "https://cdn.img.wenhairu.com/images/2019/11/05/ADeXR.jpg",
-                    "https://cdn.img.wenhairu.com/images/2019/11/05/ADb8N.jpg",
-                    "https://cdn.img.wenhairu.com/images/2019/11/05/ADd9B.jpg",
-                    "https://cdn.img.wenhairu.com/images/2019/11/05/ADi0n.jpg",
-                    "https://cdn.img.wenhairu.com/images/2019/11/05/ADsLA.jpg",
-                    "https://cdn.img.wenhairu.com/images/2019/11/05/AD3WT.jpg"
+                    'https://s2.ax1x.com/2019/11/14/MtY74J.jpg',
+                    'https://s2.ax1x.com/2019/11/14/MtYTN4.jpg',
+                    'https://s2.ax1x.com/2019/11/14/MtYoEF.jpg',
+                    'https://s2.ax1x.com/2019/11/14/MtYq3R.jpg',
+                    'https://s2.ax1x.com/2019/11/14/MtYbC9.jpg',
+                    'https://s2.ax1x.com/2019/11/14/MtYLg1.jpg',
+                    'https://s2.ax1x.com/2019/11/14/MtYOjx.jpg',
+                    'https://s2.ax1x.com/2019/11/14/MttpUe.jpg',
+                    'https://s2.ax1x.com/2019/11/14/MtYju6.jpg',
+                    'https://s2.ax1x.com/2019/11/14/MtYvDK.jpg',
+                    'https://s2.ax1x.com/2019/11/14/MtYxHO.jpg',
+                    'https://s2.ax1x.com/2019/11/14/MttSED.jpg'
+                    // 'https://cdn.img.wenhairu.com/images/2019/11/05/ADZjP.jpg',
+                    // 'https://cdn.img.wenhairu.com/images/2019/11/05/ADPZh.jpg',
+                    // 'https://cdn.img.wenhairu.com/images/2019/11/05/ADI7t.jpg',
+                    // 'https://cdn.img.wenhairu.com/images/2019/11/05/ADVYC.jpg',
+                    // 'https://cdn.img.wenhairu.com/images/2019/11/05/ADOsS.jpg',
+                    // 'https://cdn.img.wenhairu.com/images/2019/11/05/ADXys.jpg',
+                    // 'https://cdn.img.wenhairu.com/images/2019/11/05/ADeXR.jpg',
+                    // 'https://cdn.img.wenhairu.com/images/2019/11/05/ADb8N.jpg',
+                    // 'https://cdn.img.wenhairu.com/images/2019/11/05/ADd9B.jpg',
+                    // 'https://cdn.img.wenhairu.com/images/2019/11/05/ADi0n.jpg',
+                    // 'https://cdn.img.wenhairu.com/images/2019/11/05/ADsLA.jpg',
+                    // 'https://cdn.img.wenhairu.com/images/2019/11/05/AD3WT.jpg'
                 ],
+                imgList:[],
+                currentBook: '',
                 currentUrl: '',
+                currentPage: 0,
                 ctx: {},     // canvas 对象
                 context: {},//canvas 上下文对象
                 canvasMoveUse: false, // 是否处于绘制状态
@@ -166,22 +204,30 @@
                 isScale: false,
                 scalePos: {},
                 cursor: 'auto',
-                screenWidth: document.body.clientWidth
-
+                screenWidth: document.body.clientWidth,
+                isbn: '',
+                screenChange: false,
+                timer: false,     // 防止频繁触发resize，导致页面卡顿
+                interval: null   // 定时器用来区域划分中监听页面宽度改变后重新绘制
             };
         },
         computed: {
             canvasWidth: function() {
-                return this.screenWidth * 0.75;
+                let newCanvasWidth = this.screenWidth * 0.75;
+                this.screenChange = true;
+                let that = this;
+
+                return newCanvasWidth;
             },
             canvasHeight: function() {
-                return this.canvasWidth * 0.5625;
+                let newCanvasHeight = this.canvasWidth * 0.5625;
+                return newCanvasHeight;
             },
             sidebarWidthLeft: function() {
-                return this.screenWidth * 0.13;
+                return this.screenWidth * 0.1;
             },
             sidebarWidthRight: function() {
-                return this.screenWidth * 0.1;
+                return this.screenWidth * 0.12;
             },
             width: function() {
                 return this.canvasWidth;
@@ -189,49 +235,105 @@
             height: function() {
                 return this.canvasHeight;
             }
-
-
         },
         mounted() {
             const that = this;
+            //  监测屏幕宽度变化
             window.onresize = () => {
                 return (() => {
                     that.screenWidth = document.body.clientWidth;
                 })();
             };
+            // 获取初始书籍列表
+            this.axios.get('/book/bookList')
+                .then(function(response) {
+                    // console.log(response.data);
+                    that.tableData = response.data['bookList'];
+                })
+                .catch(function(response) {
+                    that.$message.error('未能获取到书籍列表，请刷新重试');
+                });
         },
         watch: {
             screenWidth(val) {
-                this.screenWidth = val;
+                if (this.timer) {
+                    this.screenWidth = val;
+                    this.timer = false;
+                    let that = this;
+                    setTimeout(function() {
+                        that.timer = true;
+                    }, 300);
+
+                }//console.log(this.canvasWidth);
+
             }
         },
         methods: {
-            saveEdit() {
-
-            },
+            // 点击区域划分窗口
             handleEdit(index, row) {
                 this.idx = index;
-                this.form = row;
+                this.currentBook = row;
                 this.editVisible = true;
+                this.currentPage = 0;
+                let that = this;
+
+                let data = {
+                    isbn: that.currentBook.isbn,
+                }
+                that.axios.get('/book/getPhoto', { params: data })
+                    .then(function(response) {
+                        that.imgList = response.data;
+                        that.imgList.forEach(value => {
+                            value.src = 'api2/' + value.src;
+                        });
+                        console.log(that.imgList)
+
+                        that.currentUrl = that.imgList[0].src;
+
+                        let canvasDiv = document.getElementById('canvasDiv');
+                        // canvasDiv.style.backgroundImage = 'url(' + that.imgList[0].src + ')';
+                        // 获取canvas绘制上下文对象和初始化画笔
+                        that.ctx = document.getElementById('mainCanvas');
+                        that.context = that.ctx.getContext('2d');
+                        //that.context.fillRect(10, 10, 10, 10);
+                        that.context.lineWidth = that.lineWidth;
+                        that.context.strokeStyle = that.lineColor;
+
+                        let data = {
+                            isbn: that.currentBook.isbn,
+                            page: that.currentPage
+                        };
+                        that.axios.get('/resource/Area', { params: data })
+                            .then(function(response) {
+                                that.drawInfo = response.data['areas'];
+                                that.drawInfo.forEach(value => {
+                                    value.x = value.relativeX * that.canvasWidth;
+                                    value.y = value.relativeY * that.canvasHeight;
+                                    value.w = value.relativeW * that.canvasWidth;
+                                    value.h = value.relativeH * that.canvasHeight;
+                                    // console.log(value.x, value.y);
+                                });
+                                that.rePaint();
+                            })
+                            .catch(function(response) {
+                                that.$message.error('获取失败，请稍后重试');
+                                //that.editVisible = false;
+                            });
+                    })
+                    .catch(function() {
+                        ;
+                    });
+
                 let img = new Image();
-                img.src = this.urls[0];
+                img.src = 'https://s2.ax1x.com/2019/11/14/MtY74J.jpg';
                 //.getContext('2d');
                 //console.log(ctx)
-                let that = this;
                 img.onload = function() {
-                    let canvasDiv = document.getElementById('canvasDiv');
-                    canvasDiv.style.backgroundImage = 'url(' + that.urls[0] + ')';
-                    // 获取canvas绘制上下文对象和初始化画笔
-                    that.ctx = document.getElementById('mainCanvas');
-                    that.context = that.ctx.getContext('2d');
-                    //that.context.fillRect(10, 10, 10, 10);
-                    that.context.lineWidth = that.lineWidth;
-                    that.context.strokeStyle = that.lineColor;
+
+
                 };
             },
-            handleDelete() {
-                this.$message.error('delete');
-            },
+            // 保存书籍修改信息
             saveEdit(formName) {
                 this.$refs[formName].validate((valid) => {
                     if (valid) {
@@ -242,27 +344,77 @@
                     }
                 });
             },
+            // 上传音频相关
             handleUpload(index, row) {
                 this.uploadVisible = true;
             },
+            // 上传音频，尚未完成
             submitUpload() {
                 this.uploadVisible = false;
                 this.fileList = [];
                 this.$message.success('上传成功');
             },
+            // 选择左侧图片
             clickImage(index) {
-                this.$confirm('是否切换图片，切换图片会保存绘图数据', '提示', {
+                if (index === this.currentPage)
+                    return;
+                this.$confirm('切换图片前是否保存已经绘制的数据', '提示', {
                     confirmButtonText: '确定',
                     cancelButtonText: '取消',
                     type: 'warning'
                 }).then(() => {
-                    this.currentUrl = this.urls[index];
-                    this.selectedItem = -1;
+                    let that = this;
+                    this.submitMarks();
+                    this.currentPage = index;
+                    this.currentUrl = that.imgList[index].src;
                     this.drawInfo = [];
-                    this.currentUrl = this.urls[index];
-                    this.rePaint();
+                    this.selectedItem = -1;
+                    let data = {
+                        isbn: this.currentBook.isbn,
+                        page: this.currentPage
+                    };
+                    //console.log('getArea:', data);
+                    this.axios.get('/resource/Area', { params: data })
+                        .then(function(response) {
+                            that.drawInfo = response.data['areas'];
+                            that.drawInfo.forEach(value => {
+                                value.x = value.relativeX * that.canvasWidth;
+                                value.y = value.relativeY * that.canvasHeight;
+                                value.w = value.relativeW * that.canvasWidth;
+                                value.h = value.relativeH * that.canvasHeight;
+                                // console.log(value.x, value.y);
+                            });
+                            that.rePaint();
+                        })
+                        .catch(function(response) {
+                            that.$message.error('查询出错，请稍后重试');
+                        });
                 }).catch(() => {
-
+                    // 与确定少了调用submitMarks()
+                    let that = this;
+                    this.currentPage = index;
+                    this.currentUrl = this.imgList[index].src;
+                    this.drawInfo = [];
+                    this.selectedItem = -1;
+                    let data = {
+                        isbn: this.currentBook.isbn,
+                        page: this.currentPage
+                    };
+                    this.axios.get('/resource/Area', { params: data })
+                        .then(function(response) {
+                            that.drawInfo = response.data['areas'];
+                            that.drawInfo.forEach(value => {
+                                value.x = value.relativeX * that.canvasWidth;
+                                value.y = value.relativeY * that.canvasHeight;
+                                value.w = value.relativeW * that.canvasWidth;
+                                value.h = value.relativeH * that.canvasHeight;
+                                // console.log(value.x, value.y);
+                            });
+                            that.rePaint();
+                        })
+                        .catch(function(response) {
+                            that.$message.error('查询出错，请稍后重试');
+                        });
                 });
 
                 //console.log(index);
@@ -270,12 +422,13 @@
                 // let div = document.getElementById('canvasDiv');
                 // div.style.backgroundImage="url("+this.currentUrl+")";
             },
+            // 区域划分时监测鼠标弹起
             canvasUp(event) {
+                //console.log(this.drawInfo);
                 let canvasX = event.clientX - event.target.parentNode.offsetLeft;
                 let canvasY = event.clientY - event.target.parentNode.offsetTop;
                 let that = this;
                 this.context.clearRect(0, 0, this.width, this.height);
-
 
                 // 用户点击了鼠标
                 if (this.isClick) {
@@ -288,7 +441,7 @@
                     let hasFound = false;
                     // 遍历绘制所有矩形，加红选中的矩形
                     this.drawInfo.forEach(function(info, index) {
-                        console.log(canvasY, canvasY);
+                        // console.log(canvasY, canvasY);
                         that.context.beginPath();
                         that.context.rect(info.x, info.y, info.w, info.h);
                         // 判断是否点击了某个矩形
@@ -297,11 +450,14 @@
                             that.selectedItem = index;
                             that.selectedPos.x = canvasX;
                             that.selectedPos.y = canvasY;
-                            that.context.strokeStyle = '#ff4444';
+                            that.context.strokeStyle = that.selectedLineColor;
+                            that.context.fillStyle = that.selectFillColor;
                         } else {
-                            that.context.strokeStyle = '#000';
+                            that.context.strokeStyle = that.lineColor;
+                            that.context.fillStyle = that.fillColor;
                         }
                         that.context.stroke();
+                        that.context.fill();
                     });
 
                     this.beginRec.imageData = this.context.getImageData(0, 0, this.width, this.height);
@@ -330,6 +486,11 @@
                             selectItem.h = Math.abs(selectItem.h);
                         }
 
+                        selectItem.relativeX = selectItem.x / this.canvasWidth;
+                        selectItem.relativeY = selectItem.y / this.canvasHeight;
+                        selectItem.relativeW = selectItem.w / this.canvasWidth;
+                        selectItem.relativeH = selectItem.h / this.canvasHeight;
+
 
                     }
                     // 拖拽动作
@@ -337,6 +498,8 @@
                         let selectItem = this.drawInfo[this.selectedItem];
                         selectItem.x = canvasX - this.dragPos.x;
                         selectItem.y = canvasY - this.dragPos.y;
+                        selectItem.relativeX = selectItem.x / this.canvasWidth;
+                        selectItem.relativeY = selectItem.y / this.canvasHeight;
                     }
                     // 绘制动作
                     else {
@@ -359,8 +522,15 @@
                                     lastInfo.y = lastInfo.y + lastInfo.h;
                                     lastInfo.h = Math.abs(lastInfo.h);
                                 }
-                                lastInfo.name = '区域' + (this.drawInfo.length).toString();
-                                console.log(lastInfo);
+                                // 生成唯一识别该区域的uuid随机字符串
+                                let uuid = Math.random().toString(36).slice(-8);
+                                // lastInfo.name = '区域' + (this.drawInfo.length).toString();
+                                lastInfo.uuid = uuid;
+                                lastInfo.relativeX = lastInfo.x / this.canvasWidth;
+                                lastInfo.relativeY = lastInfo.y / this.canvasHeight;
+                                lastInfo.relativeW = lastInfo.w / this.canvasWidth;
+                                lastInfo.relativeH = lastInfo.h / this.canvasHeight;
+                                // console.log(lastInfo);
                             }
                         }
 
@@ -375,16 +545,17 @@
                     //console.log(that.selectedItem)
                     // 判断是否点击了某个矩形
                     if (index === that.selectedItem) {
-                        that.context.strokeStyle = '#ff4444';
+                        that.context.strokeStyle = that.selectedLineColor;
+                        that.context.fillStyle = that.selectFillColor;
                     } else {
-                        that.context.strokeStyle = '#000';
+                        that.context.strokeStyle = that.lineColor;
+                        that.context.fillStyle = that.fillColor;
                     }
                     that.context.stroke();
+                    that.context.fill();
                 });
                 this.beginRec.imageData = this.context.getImageData(0, 0, this.width, this.height);
-
-
-                this.context.strokeStyle = this.lineColor;
+                //this.context.strokeStyle = that.lineColor;
                 if (this.canDraw) {
                     this.canvasMoveUse = false;
                     this.isDrag = false;
@@ -392,9 +563,24 @@
                     this.isScale = false;
                 }
             },
+            // 区域划分时监测鼠标左键按下
             canvasDown(event) {
                 if (event.buttons != 1)
                     return;
+                // 更新绘图
+                if (this.screenChange) {
+                    let that = this;
+                    //console.log('before change:', this.drawInfo);
+                    this.drawInfo.forEach(value => {
+                        value.x = value.relativeX * that.canvasWidth;
+                        value.y = value.relativeY * that.canvasHeight;
+                        value.h = value.relativeH * that.canvasHeight;
+                        value.w = value.relativeW * that.canvasWidth;
+                    });
+                    this.rePaint();
+                    //console.log('after change:', this.drawInfo);
+                    this.screenChange = false;
+                }
                 // 在图片中的实际坐标 = 屏幕坐标 - 图片距离左和顶部的距离
                 let canvasX = event.clientX - event.target.parentNode.offsetLeft;
                 let canvasY = event.clientY - event.target.parentNode.offsetTop;
@@ -440,6 +626,7 @@
                                 x: canvasX,
                                 y: canvasY,
                                 w: 0,
+                                name: '区域' + (this.drawInfo.length).toString(),
                                 type: this.lineType
                             });
                         }
@@ -459,11 +646,13 @@
                             x: canvasX,
                             y: canvasY,
                             w: 0,
+                            name: '区域' + (this.drawInfo.length + 1).toString(),
                             type: this.lineType
                         });
                     }
                 }
             },
+            // 区域划分时监测鼠标移动
             canvasMove(event) {
                 let canvasX = event.clientX - event.target.parentNode.offsetLeft;
                 let canvasY = event.clientY - event.target.parentNode.offsetTop;
@@ -474,16 +663,22 @@
                         this.context.putImageData(this.beginRec.imageData, 0, 0);
                         this.context.beginPath();
                         this.context.rect(this.scalePos.x1, this.scalePos.y1, canvasX - this.scalePos.x1, canvasY - this.scalePos.y1);
-                        this.context.strokeStyle = '#ff4444';
+                        this.context.strokeStyle = this.selectedLineColor;
+                        this.context.fillStyle = this.selectFillColor;
                         this.context.stroke();
+                        this.context.fill();
                     }
                     // 如果是拖动命令
                     else if (this.isDrag) {
                         this.context.putImageData(this.beginRec.imageData, 0, 0);
                         this.context.beginPath();
                         this.context.rect(canvasX - this.dragPos.x, canvasY - this.dragPos.y, this.dragPos.w, this.dragPos.h);
-                        this.context.strokeStyle = '#ff4444';
+                        this.context.strokeStyle = this.selectedLineColor;
+                        this.context.fillStyle = this.selectFillColor;
                         this.context.stroke();
+                        this.context.fill();
+                        //this.context.fillRect(canvasX - this.dragPos.x, canvasY - this.dragPos.y, this.dragPos.w, this.dragPos.h);
+                        //this.context.stroke();
                     } else {
                         if (this.lineType === 'rec') {
                             this.context.putImageData(this.beginRec.imageData, 0, 0);
@@ -493,9 +688,11 @@
                             let info = this.drawInfo[this.drawInfo.length - 1];
                             info.w = canvasX - this.beginRec.x;
                             info.h = canvasY - this.beginRec.y;
-                            this.context.strokeStyle = '#ff4444';
+                            this.context.strokeStyle = this.selectedLineColor;
+                            this.context.fillStyle = this.selectFillColor;
                         }
                         this.context.stroke();
+                        this.context.fill();
                         //this.context.strokeStyle = this.lineColor;
                         this.selectedItem = (this.drawInfo.length - 1); // 设定当前绘制的矩形为选中的矩形
 
@@ -525,7 +722,9 @@
                     }
                 }
             },
+            // 重新绘制函数
             rePaint() {
+                // console.log(JSON.stringify(this.context) !== '{}');
                 this.context.clearRect(0, 0, this.width, this.height);
                 let that = this;
                 this.drawInfo.forEach(function(info, index) {
@@ -535,28 +734,35 @@
                     //console.log(that.selectedItem)
                     // 判断是否点击了某个矩形
                     if (index === that.selectedItem) {
-                        that.context.strokeStyle = '#ff4444';
+                        that.context.strokeStyle = that.selectedLineColor;
+                        that.context.fillStyle = that.selectFillColor;
                     } else {
-                        that.context.strokeStyle = '#000';
+                        that.context.strokeStyle = that.lineColor;
+                        that.context.fillStyle = that.fillColor;
                     }
                     that.context.stroke();
+                    that.context.fill();
                 });
                 this.beginRec.imageData = this.context.getImageData(0, 0, this.width, this.height);
+
             },
+            // 选定一个区域
             selectItem(index) {
                 this.selectedItem = index;
                 this.rePaint();
             },
+            // 强制更新右边栏中的input,不加导致数据更新失效，可能是因为组件层次过深
             updateInput() {
                 this.$forceUpdate();
             },
+            // 删除选定的一个绘制区域
             deleteInfo(index) {
                 this.$confirm('是否确定删除第' + (index + 1) + '项？', '提示', {
                     confirmButtonText: '确定',
                     cancelButtonText: '取消',
                     type: 'warning'
                 }).then(() => {
-                    console.log(index);
+                    // console.log(index);
                     this.drawInfo.splice(index, 1);
                     // 修改相应的selectItem值
                     if (this.selectedItem > index)
@@ -567,10 +773,76 @@
                 }).catch(() => {
                     this.$message.info('已取消删除');
                 });
+            },
+            // 提交划分的区域
+            submitMarks() {
+                let that = this;
+                let data = {
+                    isbn: this.currentBook.isbn,
+                    page: this.currentPage,
+                    markAreas: this.drawInfo
+                };
+                // console.log('submitMark:', data);
+                this.axios.post('/resource/Area', data)
+                    .then(function(response) {
+                        if (response.data['code'] === -1) {
+                            that.$message.error(response.data['result']);
+                        } else {
+                            that.$message.success(response.data['result']);
+                        }
+                    })
+                    .catch(function(response) {
+                        that.$message.error('出错了，请稍后重试');
+                    });
+            },
+            // 区域划分关闭
+            areaDivClose(done) {
+                let that = this;
+                this.$confirm('关闭前是否要保存未保存的信息', '提示', {
+                    confirmButtonText: '那先保存吧',
+                    cancelButtonText: '我不保存了',
+                    type: 'warning'
+                }).then(function() {
+                    that.submitMarks();
+                    that.selectedItem = -1;
+                    if (that.canDraw) {
+                        that.canvasMoveUse = false;
+                        that.isDrag = false;
+                        that.isClick = false;
+                        that.isScale = false;
+                    }
+                    that.drawInfo = [];
+                    done();
+                }).catch(function() {
+                    that.selectedItem = -1;
+                    if (that.canDraw) {
+                        that.canvasMoveUse = false;
+                        that.isDrag = false;
+                        that.isClick = false;
+                        that.isScale = false;
+                    }
+                    that.drawInfo = [];
+                    done();
+                });
 
 
+            },
+            // 屏幕大小变化，重新绘制
+            scaleDrawInfo() {
+                if (this.screenChange) {
+                    let that = this;
+                    // console.log('before change:', this.drawInfo);
+                    this.drawInfo.forEach(value => {
+                        value.x = value.relativeX * that.canvasWidth;
+                        value.y = value.relativeY * that.canvasHeight;
+                        value.h = value.relativeH * that.canvasHeight;
+                        value.w = value.relativeW * that.canvasWidth;
+                    });
+                    this.rePaint();
+                    // console.log('after change:', this.drawInfo);
+                    this.screenChange = false;
+                }
             }
-
         }
     };
 </script>
@@ -585,12 +857,74 @@
         border-radius: 5px;
     }
 
-    .images {
+
+    .sideImageContainer {
+        text-align: center;
+        margin-bottom: 5px
+    }
+
+    .areaList {
+        margin-bottom: 5px;
+        padding-top: 2px;
+        padding-bottom: 2px;
+        margin-left: 2px;
+        max-height: 80%
+    }
+
+    .areaIndex {
+        cursor: pointer;
+        display: inline-block;
+        border: 1px solid;
+        border-radius: 50%;
+        text-align: center;
+        vertical-align: middle;
+        margin-right: 1px
+    }
+
+    .areaName {
+        width: 100px;
+        padding-left: 2px;
+        padding-right: 2px;
+        margin-right: 1px
+    }
+
+    #leftSidebar {
         width: 200px;
         height: 835px;
-        overflow-y: auto;
+        overflow-y: scroll;
         overflow-x: hidden;
+        float: left;
+        display: inline
+    }
 
+    #images {
+        height: 100%;
+        margin-top: 0
+    }
+
+    #canvasDiv {
+        background-size: 100%, 100%;
+        float: left;
+        margin-left: 6px;
+        position: fixed;
+    }
+
+    #divDialog {
+        min-width: 900px;
+        height: 100%;
+    }
+
+    #rightSidebar {
+        float: left;
+        height: 80%;
+        position: fixed;
+    }
+
+    #areasContainer {
+        height: 95%;
+        border: 1px solid #606266;
+        margin-bottom: 5px;
+        overflow: auto;
     }
 
 

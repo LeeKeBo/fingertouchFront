@@ -7,7 +7,7 @@
             <div class="content">
                 <transition name="move" mode="out-in">
                     <keep-alive :include="tagsList">
-                        <router-view></router-view>
+                        <router-view :key="key"></router-view>
                     </keep-alive>
                 </transition>
                 <el-backtop target=".content"></el-backtop>
@@ -32,6 +32,12 @@ export default {
         vHead,
         vSidebar,
         vTags
+    },
+    computed:{
+        key(){
+            return this.$route.path + Math.random()
+        }
+
     },
     created() {
         bus.$on('collapse-content', msg => {

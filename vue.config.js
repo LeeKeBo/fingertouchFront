@@ -3,21 +3,19 @@ module.exports = {
     assetsDir: 'static',
     productionSourceMap: false,
     devServer: {
-        port: 80,
         proxy: {
-            '/api':{
+            '^/api1':{
                 target:'http://fingertouchback.szulikebo.top:5000/',
                 //changeOrigin:true,
                 pathRewrite:{
-                    '^/api': '/'
+                    '^/api1': '/'
                 }
             },
             '/api2':{
                 target:'http://fingertouch.szulikebo.top:5000/',
                 pathRewrite: {
-                    '^/api':'/'
+                    '^/api2':'/'
                 }
-
             }
 
         },
