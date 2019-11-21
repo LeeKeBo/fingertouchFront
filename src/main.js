@@ -26,9 +26,9 @@ const i18n = new VueI18n({
 });
 
 // 开发环境
-axios.defaults.baseURL = "/api2"
+//axios.defaults.baseURL = "/api2"
 // 实际环境
-//axios.defaults.baseURL = "/api1"
+axios.defaults.baseURL = "/api1"
 
 //axios.defaults.withCredentials = true
 

@@ -85,7 +85,7 @@
         </el-dialog>
 
         <el-dialog title="上传文件" :visible.sysc="uploadVisible" width="50%">
-            <el-upload action="/api2/book/uploadPhoto" list-type="picture-card" multiple
+            <el-upload action="/api1/book/uploadPhoto" list-type="picture-card" multiple
                        accept=".png,.jpeg,.jpg" :data=currentBook :file-list="fileList">
                 <el-button slot="trigger" size="small" type="primary">选取文件</el-button>
             </el-upload>
@@ -272,7 +272,7 @@
                     .then(function(response) {
                         that.imgList = response.data;
                         that.imgList.forEach(value => {
-                            value.src = 'api2/' + value.src;
+                            value.src = 'api1/' + value.src;
                         });
                         let table = document.querySelector('.el-dialog__body .el-table__body tbody');
                         Sortable.create(table, {
@@ -305,7 +305,7 @@
                                 .then(function(response) {
                                     that.imgList = response.data;
                                     that.imgList.forEach(value => {
-                                        value.src = 'api2/' + value.src;
+                                        value.src = 'api1/' + value.src;
                                     });
                                     console.log(that.imgList);
                                     // 重新渲染表格

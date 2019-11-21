@@ -284,7 +284,7 @@
                     .then(function(response) {
                         that.imgList = response.data;
                         that.imgList.forEach(value => {
-                            value.src = 'api2/' + value.src;
+                            value.src = 'api1/' + value.src;
                         });
                         console.log(that.imgList)
 
