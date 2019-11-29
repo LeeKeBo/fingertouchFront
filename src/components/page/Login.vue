@@ -65,7 +65,7 @@ export default {
                             }
                         })
                         .catch(function(response) {
-                            that.$message.error(response.data['result'])
+                            that.$message.error("登陆失败，请检查账号密码")
                         });
 
                 } else {

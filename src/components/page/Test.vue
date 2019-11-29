@@ -105,7 +105,7 @@
                         console.log(that.form.book)
                         if(that.form.filename !== ""){
                             that.loading = true;
-                            that.axios.post('/api1/resource/testPhoto', {
+                            that.axios.post('/resource/testPhoto', {
                                 filename:that.form.filename,
                                 book:that.form.book
                             }).then((response) => {
