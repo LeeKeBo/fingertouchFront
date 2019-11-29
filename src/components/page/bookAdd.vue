@@ -85,7 +85,11 @@
                             .then(function(response) {
                                 if (response.data['code'] == -1) {
                                     that.$message.error('书籍isbn不能重复');
-                                } else {
+                                } else if(response.data['code'] == 0){
+                                    localStorage.removeItem('username');
+                                    that.$message.error(response.data['result'])
+                                    that.$router.push('/login');
+                                } else{
                                     that.$message.success('添加成功');
                                     that.form = {
                                         name: '',

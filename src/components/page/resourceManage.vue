@@ -12,7 +12,7 @@
         </div>
 
         <div class="container">
-            <el-table :data="tableData" border stripe style="text-align: center">
+            <el-table :data="tempTable" border stripe style="text-align: center">
                 <el-table-column prop="name" width="180" label="书籍名"></el-table-column>
                 <el-table-column prop="author" label="作者"></el-table-column>
                 <el-table-column prop="isbn" label="isbn"></el-table-column>
@@ -33,17 +33,16 @@
                                 @click="handleUpload(scope.$index, scope.row)"
                         >上传音频
                         </el-button>
-                        <!--                        书籍删除功能在书籍列表-->
-                        <!--                        <el-button-->
-                        <!--                                type="text"-->
-                        <!--                                icon="el-icon-delete"-->
-                        <!--                                class="red"-->
-                        <!--                                @click="handleDelete(scope.$index, scope.row)"-->
-                        <!--                        >删除-->
-                        <!--                        </el-button>-->
                     </template>
                 </el-table-column>
             </el-table>
+            <div id="pagination">
+                <el-pagination
+                @current-change="handleCurrentChange" :current-page="currentTablePage" :total="totalSize"
+                layout="total , ->, prev, pager, next, jumper" >
+
+                </el-pagination>
+            </div>
         </div>
 
         <el-dialog id="divDialog" :fullscreen=true title="区域划分" :visible.sync="editVisible"
@@ -169,20 +168,9 @@
                     'https://s2.ax1x.com/2019/11/14/MtYvDK.jpg',
                     'https://s2.ax1x.com/2019/11/14/MtYxHO.jpg',
                     'https://s2.ax1x.com/2019/11/14/MttSED.jpg'
-                    // 'https://cdn.img.wenhairu.com/images/2019/11/05/ADZjP.jpg',
-                    // 'https://cdn.img.wenhairu.com/images/2019/11/05/ADPZh.jpg',
-                    // 'https://cdn.img.wenhairu.com/images/2019/11/05/ADI7t.jpg',
-                    // 'https://cdn.img.wenhairu.com/images/2019/11/05/ADVYC.jpg',
-                    // 'https://cdn.img.wenhairu.com/images/2019/11/05/ADOsS.jpg',
-                    // 'https://cdn.img.wenhairu.com/images/2019/11/05/ADXys.jpg',
-                    // 'https://cdn.img.wenhairu.com/images/2019/11/05/ADeXR.jpg',
-                    // 'https://cdn.img.wenhairu.com/images/2019/11/05/ADb8N.jpg',
-                    // 'https://cdn.img.wenhairu.com/images/2019/11/05/ADd9B.jpg',
-                    // 'https://cdn.img.wenhairu.com/images/2019/11/05/ADi0n.jpg',
-                    // 'https://cdn.img.wenhairu.com/images/2019/11/05/ADsLA.jpg',
-                    // 'https://cdn.img.wenhairu.com/images/2019/11/05/AD3WT.jpg'
+
                 ],
-                imgList:[],
+                imgList: [],
                 currentBook: '',
                 currentUrl: '',
                 currentPage: 0,
@@ -208,15 +196,15 @@
                 isbn: '',
                 screenChange: false,
                 timer: false,     // 防止频繁触发resize，导致页面卡顿
-                interval: null   // 定时器用来区域划分中监听页面宽度改变后重新绘制
+                currentTablePage:1, // 用来分页
+                tempTable:[],       // table的数据
+                totalSize:0,        // 数据总量
             };
         },
         computed: {
             canvasWidth: function() {
                 let newCanvasWidth = this.screenWidth * 0.75;
                 this.screenChange = true;
-                let that = this;
-
                 return newCanvasWidth;
             },
             canvasHeight: function() {
@@ -248,7 +236,19 @@
             this.axios.get('/book/bookList')
                 .then(function(response) {
                     // console.log(response.data);
+                    if (response.data['code'] == 0) {
+                        localStorage.removeItem('username');
+                        that.$message.error(response.data['result']);
+                        that.$router.push('/login');
+                        return;
+                    }
                     that.tableData = response.data['bookList'];
+                    for(let i = 0;i<10;i++){
+                        if(that.tableData[i]){
+                            that.tempTable.push(that.tableData[i]);
+                        }
+                    }
+                    that.totalSize = that.tableData.length;
                 })
                 .catch(function(response) {
                     that.$message.error('未能获取到书籍列表，请刷新重试');
@@ -278,15 +278,21 @@
                 let that = this;
 
                 let data = {
-                    isbn: that.currentBook.isbn,
-                }
+                    isbn: that.currentBook.isbn
+                };
                 that.axios.get('/book/getPhoto', { params: data })
                     .then(function(response) {
+                        if (response.data['code'] == 0) {
+                            localStorage.removeItem('username');
+                            that.$message.error(response.data['result']);
+                            that.$router.push('/login');
+                            return;
+                        }
                         that.imgList = response.data;
                         that.imgList.forEach(value => {
                             value.src = 'api2/' + value.src;
                         });
-                        console.log(that.imgList)
+                        console.log(that.imgList);
 
                         that.currentUrl = that.imgList[0].src;
 
@@ -305,6 +311,12 @@
                         };
                         that.axios.get('/resource/Area', { params: data })
                             .then(function(response) {
+                                if (response.data['code'] == 0) {
+                                    localStorage.removeItem('username');
+                                    that.$message.error(response.data['result']);
+                                    that.$router.push('/login');
+                                    return;
+                                }
                                 that.drawInfo = response.data['areas'];
                                 that.drawInfo.forEach(value => {
                                     value.x = value.relativeX * that.canvasWidth;
@@ -376,6 +388,12 @@
                     //console.log('getArea:', data);
                     this.axios.get('/resource/Area', { params: data })
                         .then(function(response) {
+                            if (response.data['code'] == 0) {
+                                localStorage.removeItem('username');
+                                that.$message.error(response.data['result']);
+                                that.$router.push('/login');
+                                return;
+                            }
                             that.drawInfo = response.data['areas'];
                             that.drawInfo.forEach(value => {
                                 value.x = value.relativeX * that.canvasWidth;
@@ -402,6 +420,12 @@
                     };
                     this.axios.get('/resource/Area', { params: data })
                         .then(function(response) {
+                            if (response.data['code'] == 0) {
+                                localStorage.removeItem('username');
+                                that.$message.error(response.data['result']);
+                                that.$router.push('/login');
+                                return;
+                            }
                             that.drawInfo = response.data['areas'];
                             that.drawInfo.forEach(value => {
                                 value.x = value.relativeX * that.canvasWidth;
@@ -787,6 +811,10 @@
                     .then(function(response) {
                         if (response.data['code'] === -1) {
                             that.$message.error(response.data['result']);
+                        } else if (response.data['code'] == 0) {
+                            localStorage.removeItem('username');
+                            that.$message.error(response.data['result']);
+                            that.$router.push('/login');
                         } else {
                             that.$message.success(response.data['result']);
                         }
@@ -841,6 +869,18 @@
                     this.rePaint();
                     // console.log('after change:', this.drawInfo);
                     this.screenChange = false;
+                }
+            },
+            handleCurrentChange(currentPage){
+                this.currentTablePage = currentPage;
+                let from = (currentPage - 1) * 10;
+                let to = currentPage * 10;
+                console.log(from,"=>",to);
+                this.tempTable = [];
+                for (; from < to; from++) {
+                    if (this.tableData[from]) {
+                        this.tempTable.push(this.tableData[from]);
+                    }
                 }
             }
         }
@@ -925,6 +965,10 @@
         border: 1px solid #606266;
         margin-bottom: 5px;
         overflow: auto;
+    }
+
+    #pagination{
+        margin-top: 5px;
     }
 
 

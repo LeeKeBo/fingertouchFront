@@ -12,10 +12,8 @@
         </div>
 
         <div class="container">
-
-            <el-table :data="tableData" border :header-cell-style="{'text-align':'center'}"
+            <el-table :data="tempTable" border :header-cell-style="{'text-align':'center'}"
                       :cell-style="{'text-align':'center'}">
-
                 <el-table-column prop="name" width="180" label="书籍名"></el-table-column>
                 <el-table-column prop="author" label="作者"></el-table-column>
                 <el-table-column prop="isbn" label="isbn"></el-table-column>
@@ -42,7 +40,6 @@
                                 @click="handleOrder(scope.$index,scope.row)"
                         >书籍调序
                         </el-button>
-
                         <el-button
                                 type="text"
                                 icon="el-icon-delete"
@@ -52,8 +49,13 @@
                         </el-button>
                     </template>
                 </el-table-column>
-
             </el-table>
+            <div id="pagination">
+                <el-pagination
+                        @current-change="handleCurrentChange" :current-page="currentTablePage" :total="totalSize"
+                        layout="total , ->, prev, pager, next, jumper" >
+                </el-pagination>
+            </div>
         </div>
 
         <el-dialog title="编辑" :visible.sync="editVisible" width="30%">
@@ -76,7 +78,6 @@
                 <el-form-item label="书籍简介">
                     <el-input type="textarea" v-model="form.describe"></el-input>
                 </el-form-item>
-
             </el-form>
             <span slot="footer" class="dialog-footer">
                 <el-button @click="cancelEdit">取 消</el-button>
@@ -96,16 +97,22 @@
         </el-dialog>
 
         <el-dialog width="32%" title="拖动修改照片顺序" :visible.sysc="orderVisible" @open="orderOpen"
-                   @close="orderVisible = false" style="height: 90%;overflow:hidden;overflow-y: auto;">
+                   @close="orderVisible = false" style="height: 98%;">
             <el-table :data="imgList" ref="orderTable" :header-cell-style="{'text-align':'center'}" v-if="tableShow"
-                      :cell-style="{'text-align':'center'}">
+                      :cell-style="{'text-align':'center'}" style="height:600px;overflow:hidden;overflow-y: auto;">
                 <el-table-column type="index" label="序号" border align="center" width="100px"></el-table-column>
-                <el-table-column prop="src" label="图片" width="250px">
+                <el-table-column prop="src" label="图片">
                     <template scope="scope">
                         <el-popover placement="right" title="" trigger="hover">
                             <img :src="scope.row.src" style="height: 500px;width: 500px">
                             <img slot="reference" :src="scope.row.src" alt="" style="max-height: 50px;max-width: 130px">
                         </el-popover>
+                    </template>
+                </el-table-column>
+                <el-table-column>
+                    <template scope="scope">
+                        <el-button type="danger" icon="el-icon-delete" circle
+                                   @click="deletePhoto(scope.$index,scope.row.uuid)"></el-button>
                     </template>
                 </el-table-column>
             </el-table>
@@ -161,17 +168,29 @@
                 currentBook: {},
                 imgList: [],
                 currentImage: '',
-                tableShow:true
-
-
+                tableShow: true,
+                currentTablePage:1,
+                tempTable:[],
+                totalSize:0,
             };
         },
         mounted() {
             let that = this;
             this.axios.get('/book/bookList')
                 .then(function(response) {
-                    console.log(response.data);
+                    if (response.data['code'] == 0) {
+                        localStorage.removeItem('username');
+                        that.$message.error(response.data['result']);
+                        that.$router.push('/login');
+                        return;
+                    }
                     that.tableData = response.data['bookList'];
+                    for(let i = 0;i<10;i++){
+                        if(that.tableData[i]){
+                            that.tempTable.push(that.tableData[i]);
+                        }
+                    }
+                    that.totalSize = that.tableData.length;
                 })
                 .catch(function(response) {
                     that.$message.error('未能获取到书籍列表');
@@ -204,11 +223,14 @@
                     cancelButtonText: '取消',
                     type: 'warning'
                 }).then(() => {
-                    let param = { 'isbn': row.isbn };
                     that.axios.delete('/book/book', { data: { isbn: row.isbn } })
                         .then(function(response) {
                             if (response.data['code'] == -1) {
                                 that.$message.error('未找到书籍，请刷新页面重试');
+                            } else if (response.data['code'] == 0) {
+                                localStorage.removeItem('username');
+                                that.$message.error(response.data['result']);
+                                that.$router.push('/login');
                             } else {
                                 that.$message.success('成功删除');
                                 that.tableData.splice(that.idx, 1);
@@ -233,6 +255,10 @@
                                 if (response.data['code'] == -1) {
                                     that.$message.error(response.data['result']);
 
+                                } else if (response.data['code'] == 0) {
+                                    localStorage.removeItem('username');
+                                    that.$message.error(response.data['result']);
+                                    that.$router.push('/login');
                                 } else {
                                     that.$message.success('修改成功');
                                     that.editVisible = false;
@@ -270,6 +296,12 @@
                 };
                 this.axios.get('/book/getPhoto', { params: data })
                     .then(function(response) {
+                        if (response.data['code'] == 0) {
+                            localStorage.removeItem('username');
+                            that.$message.error(response.data['result']);
+                            that.$router.push('/login');
+                            return;
+                        }
                         that.imgList = response.data;
                         that.imgList.forEach(value => {
                             value.src = 'api2/' + value.src;
@@ -278,7 +310,7 @@
                         Sortable.create(table, {
                             onEnd: function(/**Event*/evt) {
                                 let tempItem = that.imgList.splice(evt.oldIndex, 1)[0];
-                                that.imgList.splice(evt.newIndex, 0, tempItem)
+                                that.imgList.splice(evt.newIndex, 0, tempItem);
                                 // evt.oldIndex;
                                 // evt.newIndex;
                                 // let temp = that.imgList[evt.oldIndex];
@@ -297,22 +329,32 @@
                     .then(function(response) {
                         if (response.data['code'] == -1) {
                             that.$message.error(response.data['result']);
+                        } else if (response.data['code'] == 0) {
+                            localStorage.removeItem('username');
+                            that.$message.error(response.data['result']);
+                            that.$router.push('/login');
                         } else {
                             let data = {
                                 'isbn': that.currentBook.isbn
                             };
                             that.axios.get('/book/getPhoto', { params: data })
                                 .then(function(response) {
+                                    if (response.data['code'] == 0) {
+                                        localStorage.removeItem('username');
+                                        that.$message.error(response.data['result']);
+                                        that.$router.push('/login');
+                                        return;
+                                    }
                                     that.imgList = response.data;
                                     that.imgList.forEach(value => {
                                         value.src = 'api2/' + value.src;
                                     });
                                     console.log(that.imgList);
                                     // 重新渲染表格
-                                    that.tableShow = false
+                                    that.tableShow = false;
                                     that.$nextTick(() => {
-                                        that.tableShow = true
-                                    })
+                                        that.tableShow = true;
+                                    });
                                     that.$message.success(response.data['result']);
                                 })
                                 .catch(function(response) {
@@ -324,8 +366,50 @@
                         that.$message.error('出错了，请稍后重试');
                     });
                 this.orderVisible = false;
-            }
+            },
+            deletePhoto(index, uuid) {
+                let that = this;
+                this.$confirm('是否确定删除此图片', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                })
+                    .then(() => {
+                        that.axios.delete('/book/photo', { data: { uuid: uuid } })
+                            .then((response) => {
+                                if (response.data['code'] == -1) {
+                                    that.$message.error(response.data['result']);
+                                } else if (response.data['code'] == 0) {
+                                    localStorage.removeItem('username');
+                                    that.$message.error(response.data['result']);
+                                    that.$router.push('/login');
+                                } else {
+                                    console.log(index);
+                                    that.imgList.splice(index, 1);
+                                    that.$message.success(response.data['result']);
+                                }
+                            })
+                            .catch((response) => {
 
+                            });
+                    })
+                    .catch(() => {
+                        that.$message.info('取消删除');
+                    });
+
+            },
+            handleCurrentChange(currentPage){
+                this.currentTablePage = currentPage;
+                let from = (currentPage - 1) * 10;
+                let to = currentPage * 10;
+                console.log(from,"=>",to);
+                this.tempTable = [];
+                for (; from < to; from++) {
+                    if (this.tableData[from]) {
+                        this.tempTable.push(this.tableData[from]);
+                    }
+                }
+            }
         }
     };
 </script>
