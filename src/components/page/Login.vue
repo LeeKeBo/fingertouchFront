@@ -35,8 +35,8 @@ export default {
     data: function() {
         return {
             param: {
-                username: 'admin',
-                password: '123123',
+                username: '测试用户',
+                password: 'test123TEST',
             },
             rules: {
                 username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
@@ -54,9 +54,11 @@ export default {
                             if(response.data['code'] == 1){
                                 that.$message.success('登录成功');
                                 localStorage.setItem('username', that.param.username);
+                                // sessionStorage.setItem('username',that.param.username);
+                                // console.log(sessionStorage.getItem('username'));
+                                localStorage.setItem('type', response.data['type']);
                                 that.$router.push('/home');
                                 //console.log(that.$router)
-
                             }
                             else{
                                 that.$message.error(response.data['result'])

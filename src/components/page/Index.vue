@@ -44,6 +44,10 @@
 <script>
     export default {
         name: 'home',
+        mounted(){
+          this.name = localStorage.getItem('username');
+          this.role = localStorage.getItem('type')
+        },
         data() {
             return {
                 name:'用户名',
