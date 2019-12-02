@@ -111,7 +111,7 @@
                             }).then((response) => {
                                 that.result = response.data;
                                 //console.log(that.result)
-                                that.imgURL ="http://fingertouchback.szulikebo.top:5000/"+ response.data["img"];
+                                that.imgURL ="api1/"+ response.data["img"];
                                 that.loading = false;
                                 that.displayResult = ""
                                 console.log(that.imgURL)
